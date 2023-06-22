@@ -1,4 +1,4 @@
-## vNext (TBD)
+## 2.0.0 (2023-06-22)
 
 ### Enhancements
 * Added support binary data type. ([#1320](https://github.com/realm/realm-dart/pull/1320))
