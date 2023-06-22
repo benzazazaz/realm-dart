@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: Staging
-      url: ${{ steps.upload-to-s3.outputs.url }}
     name: Prepare packages
     outputs:
       version: ${{ steps.get-version.outputs.version }}
@@ -140,24 +139,6 @@ jobs:
         path: release/**
         retention-days: 30
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_S3_ACCESS_KEY }}
-        aws-secret-access-key: ${{ secrets.AWS_S3_SECRET_KEY }}
-        aws-region: us-east-1
-
-    - name: Upload release folder to S3
-      id: upload-to-s3
-      run: |
-        tar -zcvf packages.tar.gz common generator realm_dart realm ExtractedChangelog.md
-        rm -rf common generator realm_dart realm ExtractedChangelog.md
-
-        s3_folder="static.realm.io/downloads/dart/${{ steps.get-version.outputs.version }}"
-        aws s3 sync --acl public-read . "s3://$s3_folder"
-        echo "url=https://$s3_folder/packages.tar.gz" >> $GITHUB_OUTPUT
-      working-directory: release
-
   publish-packages:
     runs-on: ubuntu-latest
     if: ${{ github.event.inputs.environment == 'Production' }}
@@ -218,15 +199,6 @@ jobs:
         tag: ${{ needs.prepare-packages.outputs.version }}
         token: ${{ secrets.REALM_CI_PAT }}
         draft: false
-
-    - name: 'Post to #realm-releases'
-      uses: realm/ci-actions/release-to-slack@338bf3e7575015a28faec8b67614385d122aece7
-      continue-on-error: true
-      with:
-        changelog: release/ExtractedChangelog.md
-        sdk: Flutter/Dart
-        webhook-url: ${{ secrets.SLACK_RELEASES_WEBHOOK }}
-        version: ${{ needs.prepare-packages.outputs.version }}
 
     - name: Update Changelog
       run: |
